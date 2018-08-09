@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+from utils.sample_utils import furthest_point_sample
 
-# from utils.sample_utils import furthest_point_sample
-
+is_GPU=torch.cuda.is_available()
 
 def gather_2d(xyz, index):
     """
@@ -35,6 +35,8 @@ def random_sample(xyz, num_sample):
         a = torch.randperm(P1)[:num_sample]
         idx.append(a)
     idx_sample = torch.stack(idx, dim=0)
+    if is_GPU:
+        idx_sample = idx_sample.cuda()
     new_xyz = gather_2d(xyz, idx_sample)
 
     return idx_sample, new_xyz
@@ -115,10 +117,10 @@ class SA_module(nn.Module):
 
         ###########################################
         # sampling
-        idx, new_xyz = random_sample(input_xyz, self.num_sample)
+        #idx, new_xyz = random_sample(input_xyz, self.num_sample)
 
-        # idx=furthest_point_sample(input_xyz,self.num_sample)
-        # new_xyz=gather_2d(input_xyz,idx)
+        idx=furthest_point_sample(input_xyz.contiguous(),self.num_sample)
+        new_xyz=gather_2d(input_xyz,idx.long())
 
         ###########################################
         # grouping
@@ -153,9 +155,11 @@ if __name__ == '__main__':
     P2 = 50
     num_nn = 5
 
-    pts_feature = torch.randn(N, P1, 6)
+    pts_feature = torch.randn(N, P1, 6).cuda()
     pts = pts_feature[:,:,:3]
 
     SA1 = SA_module(num_sample=P2, num_nn=num_nn, mlp_list=[8, 32, 64], input_dim=(3+6))
+    if is_GPU:
+        SA1 = SA1.cuda()
     _, new_feature = SA1(pts, pts_feature)
     print (new_feature.size())
