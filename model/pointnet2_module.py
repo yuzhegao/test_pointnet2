@@ -158,6 +158,7 @@ if __name__ == '__main__':
     pts_feature = torch.randn(N, P1, 6).cuda()
     pts = pts_feature[:,:,:3]
 
+    ## test SA module
     SA1 = SA_module(num_sample=P2, num_nn=num_nn, mlp_list=[8, 32, 64], input_dim=(3+6))
     if is_GPU:
         SA1 = SA1.cuda()
