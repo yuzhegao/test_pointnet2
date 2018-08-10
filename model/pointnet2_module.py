@@ -201,6 +201,6 @@ if __name__ == '__main__':
     ## test SA grouping all
     SA2=SA_module(num_sample=1, num_nn=P1, mlp_list=[8, 32, 64], input_dim=(3+6),use_FPS=False,grouping_all=True)
     if is_GPU:
-        SA1 = SA1.cuda()
+        SA2 = SA2.cuda()
     _,_, new_feature = SA2(pts, pts_feature)
     print (new_feature.size())
