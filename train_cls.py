@@ -12,7 +12,7 @@ import torch.utils.data
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from pointnet_cls import PointNet_cls
+from model.pointnet2_cls import pointnet2_cls
 from data_utils import pts_cls_dataset,pts_collate
 
 
@@ -45,8 +45,9 @@ parser.add_argument('--decay_step', default=200000, type=int,
 parser.add_argument('--decay_rate', default=0.7, type=float,
                     metavar='LR', help='decay_rate of learning rate')
 
-
-parser.add_argument('--resume', default='checkpoint.pth',type=str, metavar='PATH',help='path to latest checkpoint ')
+parser.add_argument('--fps', action='store_true', help='Whether to use fps')
+parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
+parser.add_argument('--resume', default='cls_checkpoint.pth',type=str, metavar='PATH',help='path to latest checkpoint ')
 
 args=parser.parse_args()
 logname=args.log
@@ -55,11 +56,11 @@ if is_GPU:
     torch.cuda.set_device(args.gpu)
 
 
-my_dataset=pts_cls_dataset(datalist_path=args.data)
+my_dataset=pts_cls_dataset(datalist_path=args.data,use_extra_feature=args.normal)
 data_loader = torch.utils.data.DataLoader(my_dataset,
             batch_size=args.batch_size, shuffle=True, num_workers=4,collate_fn=pts_collate)
 
-net=PointNet_cls()
+net=pointnet2_cls(input_dim=3,use_FPS=args.fps)
 if is_GPU:
     net=net.cuda()
 optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
@@ -139,19 +140,9 @@ def train():
             else:
                 pts = Variable(pts)
                 label = Variable(label)
-            pred,trans = net(pts) ## trans [N,64,64]
 
+            pred = net(pts)
             loss = critenrion(pred, label)
-            K = trans.size(1)
-            reg_loss = torch.bmm(trans, trans.transpose(2, 1))
-            if is_GPU:
-                iden = Variable(torch.eye(K).cuda())
-            else:
-                iden = Variable(torch.eye(K))
-            reg_loss -= iden
-            reg_loss=reg_loss*reg_loss
-
-            loss = loss + reg_loss.sum()
 
             _, pred_index = torch.max(pred, dim=1)
             num_correct = (pred_index.eq(label)).data.cpu().sum()

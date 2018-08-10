@@ -64,6 +64,11 @@ class pts_cls_dataset(data.Dataset):
             choice=np.random.choice(len(pts),self.num_points,replace=False)
             pts=pts[choice]
 
+        pts_exfeat = None
+        if self.extra_feature:
+            pts_exfeat = pts[:, 3:]
+            pts = pts[:, :3]
+
         ## data argument
         if self.data_argument:
             """
@@ -87,7 +92,10 @@ class pts_cls_dataset(data.Dataset):
             jittered_data = np.clip(sigma * np.random.randn(self.num_points, 3), -1 * clip, clip)
             pts += jittered_data  ## jitter
 
-        return pts,label
+        if self.extra_feature:
+            pts = np.concatenate((pts,pts_exfeat),axis=1)
+
+        return pts,label ## numpy array
 
     def __len__(self):
         return len(self.label)
@@ -102,7 +110,6 @@ def pts_collate(batch):
         label_batch.append(sample[1])
 
     pts_batch=torch.stack(pts_batch,dim=0)
-    pts_batch=torch.transpose(pts_batch,dim0=1,dim1=2)
     label_batch =torch.from_numpy(np.squeeze(label_batch))
 
     return pts_batch.float(),label_batch.long()
@@ -155,6 +162,7 @@ def pts_collate_seg(batch):
 
 
 if __name__ == '__main__':
+    ## test part_seg dataset
     dataset=shapenet_dataset(datalist_path='/home/gaoyuzhe/Downloads/3d_data/hdf5_data/test_hdf5_file_list.txt')
     loader=torch.utils.data.DataLoader(dataset,batch_size=2, shuffle=True, collate_fn=pts_collate_seg)
 
@@ -164,4 +172,11 @@ if __name__ == '__main__':
         print (label.size())
         break
 
+    ## test classify dataset
+    cls_dataset = pts_cls_dataset(datalist_path='/home/gaoyuzhe/Downloads/3d_data/modelnet/test_files.txt',use_extra_feature=True)
+    cls_loader = torch.utils.data.DataLoader(cls_dataset,batch_size=2, shuffle=True, num_workers=4,collate_fn=pts_collate)
+    for idx,(pts,label) in enumerate(cls_loader):
+        print (pts.size())
+        print (label.size())
+        break
 
