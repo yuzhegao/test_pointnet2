@@ -1,6 +1,9 @@
 from __future__ import print_function,division
 
 import os
+import sys
+sys.path.append('./utils/')
+
 import time
 import shutil
 import argparse
@@ -97,7 +100,7 @@ def evaluate(model_test):
         else:
             pts = Variable(pts)
             label = Variable(label)
-        pred,trans = net(pts)
+        pred = net(pts)
 
         _, pred_index = torch.max(pred, dim=1)
         num_correct = (pred_index.eq(label)).data.cpu().sum().item()
