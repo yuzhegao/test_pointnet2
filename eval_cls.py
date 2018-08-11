@@ -68,7 +68,7 @@ def evaluate(model_test):
     total_seen_class = [0 for _ in range(NUM_CLASSES)]
     total_correct_class = [0 for _ in range(NUM_CLASSES)]
 
-    data_eval = pts_cls_dataset(datalist_path=args.data,use_extra_feature=args.normal,data_argument=False)
+    data_eval = pts_cls_dataset(datalist_path=args.data_eval,use_extra_feature=args.normal,data_argument=False)
     eval_loader = torch.utils.data.DataLoader(data_eval,
                     batch_size=args.batch_size, shuffle=True, collate_fn=pts_collate)
     print ("dataset size:",len(eval_loader.dataset))

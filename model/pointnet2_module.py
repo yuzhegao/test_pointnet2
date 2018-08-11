@@ -60,6 +60,7 @@ def KNN(new_xyz, input_xyz, num_nn):
      input_xyz: [bs,P1,3]
      num_nn: int
     :return:
+     nn_distances: [bs,P2,num_nn]
      nn_indices: [bs,P2,num_nn]
      knn_xyz: [bs,P2,num_nn,3]
     """
@@ -75,7 +76,7 @@ def KNN(new_xyz, input_xyz, num_nn):
     knn_xyz = knn_xyz.view(bs, P2, num_nn, 3)  ##[bs,P2,num_nn,3]
     knn_xyz -= torch.unsqueeze(new_xyz, dim=2).repeat(1, 1, num_nn, 1)
 
-    return nn_indices, knn_xyz
+    return nn_distances,nn_indices, knn_xyz
 
 
 ##################################################################################
@@ -129,7 +130,7 @@ class SA_module(nn.Module):
 
             ###########################################
             # grouping
-            nn_indices, grouped_xyz = KNN(new_xyz, input_xyz, self.num_nn)
+            _,nn_indices, grouped_xyz = KNN(new_xyz, input_xyz, self.num_nn)
             ##[bs,P2,num_nn] [bs,P2,num_nn,3]
 
             nn_indices_patten = nn_indices.view(batch_size, self.num_sample * self.num_nn)
@@ -180,6 +181,82 @@ class SA_module(nn.Module):
         return nn_indices,new_xyz, new_feature
 
 
+######################################################################
+class FP_module(nn.Module):
+    def __init__(self, mlp_list, input_dim,fp_nn=3):
+        super(FP_module, self).__init__()
+        self.fp_nn=fp_nn
+
+        num_layer = len(mlp_list)
+        if num_layer == 2:
+            mlp1, mlp2 = mlp_list
+            mlp3 = None
+        else:
+            mlp1, mlp2, mlp3 = mlp_list
+
+        self.conv1 = nn.Sequential(
+            nn.Conv1d(input_dim, mlp1, 1, 1),
+            nn.BatchNorm1d(mlp1),
+            nn.ReLU(),
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv1d(mlp1, mlp2, 1, 1),
+            nn.BatchNorm1d(mlp2),
+            nn.ReLU(),
+        )
+        self.conv3 = None
+        if mlp3 is not None:
+            self.conv3 = nn.Sequential(
+                nn.Conv1d(mlp2, mlp3, 1, 1),
+                nn.BatchNorm1d(mlp3),
+                nn.ReLU(),
+            )
+    def forward(self,xyz1,xyz2,pts1,pts2):
+        """
+         xyz1: [N,P1,3] -> pts of previous layer
+         xyz2: [N,P2,3] -> pts of late layer, here P1 > P2
+         pts1: [N.P1,C1]
+         pts2: [N,P2,C2]
+        :return:
+         new_points: (N, P1, mlp[-1]) -> P1 pts with new feature
+        """
+        batchsize, P1, C1 = pts1.size()
+        _,P2,C2 = pts2.size()
+
+        fp_disc, fp_indice, fp_xyz = KNN(xyz1, xyz2, num_nn=self.fp_nn)
+        ##[bs,P1,3] [bs,P1,3] [bs,P1,3,3]
+        fp_disc = torch.clamp(fp_disc, min=1e-10,max=10000)
+        norm = torch.unsqueeze(torch.sum(1.0 / fp_disc, dim=2), dim=2).repeat(1,1,self.fp_nn) ##[bs,P1,3]
+        weight = (1.0/fp_disc) / norm ##[bs,P1,3]
+        weight = torch.unsqueeze(weight, dim=3).repeat(1,1,1,C2)
+
+        ## feature propagation: [bs,P1,nn] + [bs,P2,C]2 -> [bs,P1,nn,C2]
+        fp_indice_platten = fp_indice.contiguous().view(batchsize, P1 * self.fp_nn) ##[bs,P1*nn]
+        fp_row_feature = gather_2d(pts2,fp_indice_platten)
+        fp_row_feature = fp_row_feature.contiguous().view(batchsize, P1, self.fp_nn, C2) ##[bs,P1,3,C2]
+        fp_weight_feature = fp_row_feature * weight ##[bs,P1,3,C1]
+
+        fp_weight_feature = fp_weight_feature.contiguous().view(batchsize * P1,self.fp_nn, -1).transpose(2,1) ##[bs*P1,C2,3]
+        fp_group_feature = torch.squeeze(F.max_pool1d(fp_weight_feature,kernel_size=self.fp_nn)) ##[bs*P1,C2]
+        fp_group_feature = fp_group_feature.contiguous().view(batchsize, P1, C2) ## [bs,P1,C2]
+
+        ## unet archtecture
+        fp_group_feature = torch.cat([fp_group_feature,pts1], dim=2) ## [bs,P1,C2+C1]
+        fp_group_feature = fp_group_feature.transpose(1,2) ## [bs,C2+C1,P1]
+
+        new_feature = self.conv2(self.conv1(fp_group_feature))
+        if self.conv3 is not None:
+            new_feature = self.conv3(new_feature)
+        new_feature = new_feature.transpose(2,1) ## [bs,P1,mlp[-1]]
+
+        return new_feature
+
+
+
+
+
+
+
 if __name__ == '__main__':
     N = 9
     P1 = 200
@@ -193,7 +270,7 @@ if __name__ == '__main__':
 
     ## test SA module
     SA1 = SA_module(num_sample=P2, num_nn=num_nn, mlp_list=[8, 32, 64],
-                    input_dim=(3+6),use_FPS=True)
+                    input_dim=(3+6),use_FPS=False)
     if is_GPU:
         SA1 = SA1.cuda()
     _,_, new_feature = SA1(pts, pts_feature)
@@ -201,8 +278,26 @@ if __name__ == '__main__':
 
     ## test SA grouping all
     SA2=SA_module(num_sample=1, num_nn=P1, mlp_list=[8, 32, 64],
-                  input_dim=(3+6),use_FPS=True,grouping_all=True)
+                  input_dim=(3+6),use_FPS=False,grouping_all=True)
     if is_GPU:
         SA2 = SA2.cuda()
     _,_, new_feature = SA2(pts, pts_feature)
     print (new_feature.size())
+    print ('\n')
+    ###############################################################################
+
+    xyz1 = torch.randn(N, P1, 3)
+    xyz2 = torch.randn(N, P2, 3)
+    pts1 = torch.randn(N, P1, 6)
+    pts2 = torch.randn(N, P2, 19)
+    if is_GPU:
+        xyz1,xyz2,pts1,pts2 = xyz1.cuda(),xyz2.cuda(),pts1.cuda(),pts2.cuda()
+
+    ## test FP module
+    FP1 = FP_module(input_dim=(6+19),mlp_list=[8,32,64])
+    if is_GPU:
+        FP1 = FP1.cuda()
+    new_feat=FP1(xyz1,xyz2,pts1,pts2)
+    print (new_feat.size())
+
+
