@@ -171,13 +171,12 @@ def evaluate(model_test):
     ## mIOU of each class
     mIOU_class = np.array(total_mIOU_class) / np.array(total_seen_class,dtype=np.float)
 
-    print ('##############################################################')
-    print('the average correct rate:{}'.format(total_correct * 1.0 / (len(eval_loader.dataset)*2048)))
-    print('the mean IOU overall :{}'.format((mIOU_class * weight_cls).sum()))
-    print ('##############################################################')
-    print ('mIOU of classes')
-    for i,cls in enumerate(data_eval.classname):
-        print ('{}: {}'.format(cls,mIOU_class[i]))
+    with open(logname,'w+') as f:
+        f.write('##############################################################')
+        f.write('the average correct rate:{}'.format(total_correct * 1.0 / (len(eval_loader.dataset) * 2048)))
+        f.write('the mean IOU overall :{}'.format((mIOU_class * weight_cls).sum()))
+        f.write('##############################################################')
+
 
 def train():
 
