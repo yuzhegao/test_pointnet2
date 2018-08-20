@@ -152,8 +152,8 @@ def pts_collate_seg(batch):
         label_batch.append(sample[1])
         seg_label_batch.append(torch.from_numpy(sample[2]))
 
-    pts_batch=torch.stack(pts_batch,dim=0)  ##[bs,P,3]
-    pts_batch=torch.transpose(pts_batch,dim0=1,dim1=2)
+    pts_batch=torch.stack(pts_batch,dim=0)  ##[bs,3,P]
+    #pts_batch=torch.transpose(pts_batch,dim0=1,dim1=2)
     label_batch =torch.from_numpy(np.squeeze(label_batch))
     seg_label_batch=torch.stack(seg_label_batch,dim=0)
 

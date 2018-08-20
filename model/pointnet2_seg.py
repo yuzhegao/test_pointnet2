@@ -38,11 +38,11 @@ class pointnet2_seg(nn.Module):
         l2_indices, l2_xyz, l2_feature = self.SA2(l1_xyz, l1_feature)  ##(bs, 128, 64), (bs, 128, 3), (bs, 128, 256)
         l3_indices, l3_xyz, l3_feature = self.SA3(l2_xyz, l2_feature)  ##(bs, 1, 128), (bs, 1, 3), (bs, 1, 1024)
 
-        print (l2_xyz.size(), l3_xyz.size(), l2_feature.size(), l3_feature.size())
+        #print (l2_xyz.size(), l3_xyz.size(), l2_feature.size(), l3_feature.size())
         new_l2_feature = self.FP1(l2_xyz, l3_xyz, l2_feature, l3_feature)
         new_l1_feature = self.FP2(l1_xyz, l2_xyz, l1_feature, new_l2_feature)
         new_pts_feature = self.FP3(pts_xyz, l1_xyz, pts, new_l1_feature)  ##[bs, P0, C]
-        print (new_pts_feature.size())
+        #print (new_pts_feature.size())
         new_pts_feature = new_pts_feature.transpose(1, 2)
 
         scores = self.classifer(new_pts_feature)
