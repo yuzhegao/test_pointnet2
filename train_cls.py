@@ -22,11 +22,11 @@ from data_utils import pts_cls_dataset,pts_collate
 is_GPU=torch.cuda.is_available()
 
 parser = argparse.ArgumentParser(description='pointnet')
-parser.add_argument('--data', metavar='DIR',default='/home/gaoyuzhe/Downloads/3d_data/modelnet/test_files.txt',
+parser.add_argument('--data', metavar='DIR',default='/home/yuzhe/Downloads/3d_data/modelnet/test_files.txt',
                     help='txt file to dataset')
-parser.add_argument('--data-eval', metavar='DIR',default='/home/gaoyuzhe/Downloads/3d_data/modelnet/test_files.txt',
+parser.add_argument('--data-eval', metavar='DIR',default='/home/yuzhe/Downloads/3d_data/modelnet/test_files.txt',
                     help='txt file to validate dataset')
-parser.add_argument('--log', metavar='LOG',default='log.txt',
+parser.add_argument('--log', metavar='LOG',default='log_classification',
                     help='filename of log file')
 
 parser.add_argument('--gpu', default=0, type=int, metavar='N',
@@ -50,10 +50,27 @@ parser.add_argument('--decay_rate', default=0.7, type=float,
 
 parser.add_argument('--fps', action='store_true', help='Whether to use fps')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
-parser.add_argument('--resume', default='cls_checkpoint.pth',type=str, metavar='PATH',help='path to latest checkpoint ')
+parser.add_argument('--resume', default=None,type=str, metavar='PATH',help='path to latest checkpoint ')
 
 args=parser.parse_args()
-logname=args.log
+
+LOG_DIR = os.path.join(args.log,time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time())))
+print ('prepare training in {}'.format(time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time()))))
+
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+if args.resume is None:
+    resume = os.path.join(LOG_DIR, "checkpoint.pth")
+else:
+    resume = args.resume
+
+logname = os.path.join(LOG_DIR,'log.txt')
+optfile = os.path.join(LOG_DIR,'opt.txt')
+with open(optfile, 'wt') as opt_f:
+    opt_f.write('------------ Options -------------\n')
+    for k, v in sorted(vars(args).items()):
+        opt_f.write('%s: %s\n' % (str(k), str(v)))
+    opt_f.write('-------------- End ----------------\n')
 
 if is_GPU:
     torch.cuda.set_device(args.gpu)
@@ -74,7 +91,7 @@ def save_checkpoint(epoch,model,num_iter):
         'model': model.state_dict(),
         'epoch': epoch,
         'iter':num_iter,
-    },args.resume)
+    },resume)
 
 def log(filename,epoch,batch,loss):
     f1=open(filename,'a')
@@ -110,7 +127,7 @@ def evaluate(model_test):
 
     model_test.train()
     with open(logname,'a') as f:
-        f.write('\nthe evaluate average accuracy:{}'.format(total_correct*1.0/(len(eval_loader.dataset))))
+        f.write('\n\nthe evaluate average accuracy:{}\n'.format(total_correct*1.0/(len(eval_loader.dataset))))
 
 def train():
 
@@ -118,11 +135,11 @@ def train():
     num_iter=0
     start_epoch=0
 
-    if os.path.exists(args.resume):
+    if os.path.exists(resume):
         if is_GPU:
-            checkoint = torch.load(args.resume)
+            checkoint = torch.load(resume)
         else:
-            checkoint = torch.load(args.resume, map_location=lambda storage, loc: storage)
+            checkoint = torch.load(resume, map_location=lambda storage, loc: storage)
         start_epoch = checkoint['epoch']
         net.load = net.load_state_dict(checkoint['model'])
         num_iter= checkoint['iter']
@@ -168,7 +185,7 @@ def train():
                 f1 = open(logname, 'a')
                 f1.write("learning rate decay in iter{}\n".format(num_iter))
                 f1.close()
-                print ("learning rate decay in iter{}\n".format(num_iter))
+                print ("\n\nlearning rate decay in iter{}\n".format(num_iter))
                 for param in optimizer.param_groups:
                     param['lr'] *= args.decay_rate
                     param['lr'] = max(param['lr'],0.00001)

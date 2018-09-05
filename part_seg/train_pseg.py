@@ -21,11 +21,11 @@ from data_utils import shapenet_dataset,pts_collate_seg
 is_GPU=torch.cuda.is_available()
 
 parser = argparse.ArgumentParser(description='pointnet_partseg')
-parser.add_argument('--data', metavar='DIR',default='/home/gaoyuzhe/Downloads/3d_data/hdf5_data/test_hdf5_file_list.txt',
+parser.add_argument('--data', metavar='DIR',default='/home/yuzhe/Downloads/3d_data/hdf5_data/test_hdf5_file_list.txt',
                     help='txt file to dataset')
-parser.add_argument('--data-eval', metavar='DIR',default='/home/gaoyuzhe/Downloads/3d_data/hdf5_data/test_hdf5_file_list.txt',
+parser.add_argument('--data-eval', metavar='DIR',default='/home/yuzhe/Downloads/3d_data/hdf5_data/test_hdf5_file_list.txt',
                     help='txt file to validate dataset')
-parser.add_argument('--log', metavar='LOG',default='log',
+parser.add_argument('--log', metavar='LOG',default='log_partsegmentation',
                     help='dir of log file and resume')
 
 parser.add_argument('--gpu', default=0, type=int, metavar='N',
@@ -44,16 +44,27 @@ parser.add_argument('--decay_step', default=200000, type=int,
                     metavar='LR', help='decay_step of learning rate')
 parser.add_argument('--decay_rate', default=0.7, type=float,
                     metavar='LR', help='decay_rate of learning rate')
-parser.add_argument('--resume', default='pointnet_partseg.pth',
-                    type=str, metavar='PATH',help='path to latest checkpoint ')
+parser.add_argument('--resume', default=None,type=str, metavar='PATH',help='path to latest checkpoint ')
 
 args=parser.parse_args()
 
-LOG_DIR=args.log
+LOG_DIR = os.path.join(args.log,time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time())))
+print ('prepare training in {}'.format(time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time()))))
+
 if not os.path.exists(LOG_DIR):
-    os.mkdir(LOG_DIR)
-resume=os.path.join(LOG_DIR,args.resume)
-logname=os.path.join(LOG_DIR,'log.txt')
+    os.makedirs(LOG_DIR)
+if args.resume is None:
+    resume = os.path.join(LOG_DIR, "checkpoint.pth")
+else:
+    resume = args.resume
+
+logname = os.path.join(LOG_DIR,'log.txt')
+optfile = os.path.join(LOG_DIR,'opt.txt')
+with open(optfile, 'wt') as opt_f:
+    opt_f.write('------------ Options -------------\n')
+    for k, v in sorted(vars(args).items()):
+        opt_f.write('%s: %s\n' % (str(k), str(v)))
+    opt_f.write('-------------- End ----------------\n')
 
 if is_GPU:
     torch.cuda.set_device(args.gpu)
@@ -243,7 +254,7 @@ def train():
                 f1 = open(logname, 'a')
                 f1.write("learning rate decay in iter{}\n".format(num_iter))
                 f1.close()
-                print ("learning rate decay in iter{}\n".format(num_iter))
+                print ("\n\nlearning rate decay in iter{}\n".format(num_iter))
                 for param in optimizer.param_groups:
                     param['lr'] *= args.decay_rate
                     param['lr'] = max(param['lr'],1e-5)

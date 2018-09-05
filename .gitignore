@@ -112,3 +112,4 @@ build/*
 *.so
 *.pth
 *.txt
+*.xml
