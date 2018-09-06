@@ -49,6 +49,7 @@ parser.add_argument('--decay_rate', default=0.7, type=float,
                     metavar='LR', help='decay_rate of learning rate')
 
 parser.add_argument('--fps', action='store_true', help='Whether to use fps')
+parser.add_argument('--num-pts', default=1024 , type=int, metavar='N', help='pts num')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--resume', default=None,type=str, metavar='PATH',help='path to latest checkpoint ')
 
@@ -76,15 +77,19 @@ if is_GPU:
     torch.cuda.set_device(args.gpu)
 
 
-my_dataset=pts_cls_dataset(datalist_path=args.data,use_extra_feature=args.normal)
+my_dataset=pts_cls_dataset(datalist_path=args.data,use_extra_feature=args.normal,num_points=args.num_pts)
 data_loader = torch.utils.data.DataLoader(my_dataset,
             batch_size=args.batch_size, shuffle=True, num_workers=4,collate_fn=pts_collate)
 
-net=pointnet2_cls(input_dim=3,use_FPS=args.fps)
+if args.normal:
+    pts_featdim = 6
+else:
+    pts_featdim = 3
+net = pointnet2_cls(input_dim=pts_featdim,use_FPS=args.fps)
 if is_GPU:
-    net=net.cuda()
+    net = net.cuda()
 optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
-critenrion=nn.NLLLoss()
+critenrion = nn.NLLLoss()
 
 def save_checkpoint(epoch,model,num_iter):
     torch.save({
@@ -105,7 +110,7 @@ def evaluate(model_test):
     model_test.eval()
     total_correct=0
 
-    data_eval = pts_cls_dataset(datalist_path=args.data_eval,data_argument=False)
+    data_eval = pts_cls_dataset(datalist_path=args.data_eval,data_argument=False,use_extra_feature=args.normal,num_points=args.num_pts)
     eval_loader = torch.utils.data.DataLoader(data_eval,
                     batch_size=4, shuffle=True, collate_fn=pts_collate)
     print ("dataset size:",len(eval_loader.dataset))

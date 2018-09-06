@@ -42,14 +42,17 @@ class pointnet2_cls(nn.Module):
         return prob
 
 if __name__ == '__main__':
-    net = pointnet2_cls(input_dim=6)
+    N = 2
+    P1 = 1024
+    feat_dim = 9
+
+    net = pointnet2_cls(input_dim=feat_dim)
     is_GPU = torch.cuda.is_available()
     if is_GPU:
         net = net.cuda()
 
-    N = 2
-    P1 = 1024
-    pts_feature = torch.randn(N, P1, 6)
+
+    pts_feature = torch.randn(N, P1, feat_dim)
     if is_GPU:
         pts_feature = pts_feature.cuda()
 

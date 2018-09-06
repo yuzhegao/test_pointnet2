@@ -32,6 +32,7 @@ parser.add_argument('-bs',  '--batch-size', default=4 , type=int,
                     metavar='N', help='mini-batch size (default: 2)')
 
 parser.add_argument('--fps', action='store_true', help='Whether to use fps')
+parser.add_argument('--num-pts', default=1024 , type=int, metavar='N', help='pts num')
 parser.add_argument('--normal', action='store_true', help='Whether to use normal information')
 parser.add_argument('--resume', default='checkpoint.pth',type=str, metavar='PATH',help='path to latest checkpoint ')
 
@@ -43,7 +44,11 @@ print (SHAPE_NAMES)
 if is_GPU:
     torch.cuda.set_device(args.gpu)
 
-net=pointnet2_cls(input_dim=3,use_FPS=args.fps)
+if args.normal:
+    pts_featdim = 6
+else:
+    pts_featdim = 3
+net = pointnet2_cls(input_dim=pts_featdim,use_FPS=args.fps)
 if is_GPU:
     net=net.cuda()
 critenrion=nn.NLLLoss()
@@ -68,7 +73,7 @@ def evaluate(model_test):
     total_seen_class = [0 for _ in range(NUM_CLASSES)]
     total_correct_class = [0 for _ in range(NUM_CLASSES)]
 
-    data_eval = pts_cls_dataset(datalist_path=args.data_eval,use_extra_feature=args.normal,data_argument=False)
+    data_eval = pts_cls_dataset(datalist_path=args.data_eval,use_extra_feature=args.normal,data_argument=False,num_points=args.num_pts)
     eval_loader = torch.utils.data.DataLoader(data_eval,
                     batch_size=args.batch_size, shuffle=True, collate_fn=pts_collate)
     print ("dataset size:",len(eval_loader.dataset))
