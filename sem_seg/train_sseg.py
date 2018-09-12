@@ -14,9 +14,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 sys.path.append('../')
-from model.pointnet2_seg import pointnet2_seg
+from pointnet_semseg import pointnet2_semseg
 from s3dis_utils import indoor3d_dataset,pts_collate_seg
-
 
 is_GPU=torch.cuda.is_available()
 
@@ -87,7 +86,7 @@ if args.color:
     feat_dim = 6
 else:
     feat_dim = 3
-net = pointnet2_seg(input_dim=feat_dim, use_FPS=args.fps, num_class=13)
+net = pointnet2_semseg(input_dim=feat_dim, use_FPS=args.fps, num_class=13)
 if is_GPU:
     net = net.cuda()
 optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
@@ -132,14 +131,14 @@ def evaluate(model_test):
         pred = net(pts)
 
         _, pred_index = torch.max(pred, dim=1)  ##[N,P]
-        pred_index, seg_label = pred_index.view(-1,), seg_label.view(-1,)
+        pred_index, seg_label = pred_index.view(-1,), seg_label.view(-1,) ##[N*P,]
         num_correct = (pred_index.eq(seg_label)).data.cpu().sum()
         print('in batch{} acc={}'.format(batch_idx, num_correct.item() * 1.0 / (EVAL_BATCHSIZE * NUM_POINTS)))
         total_correct += num_correct.item()
 
-        for idx,pts_label in enumerate(seg_label):
-            total_seen_class[pts_label] += 1
-            total_correct_class[pts_label] += (pred_index.eq(pts_label))[idx]
+        for idx,point_label in enumerate(seg_label):
+            total_seen_class[point_label] += 1
+            total_correct_class[point_label] += (pred_index.eq(point_label))[idx]
 
     with open(logname,'a') as f:
         f.write('\nthe accuracy:{}\n'.format(total_correct * 1.0 / (len(eval_loader.dataset) * NUM_POINTS)))
