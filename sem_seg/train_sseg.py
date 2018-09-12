@@ -138,7 +138,7 @@ def evaluate(model_test):
 
         for idx,point_label in enumerate(seg_label):
             total_seen_class[point_label] += 1
-            total_correct_class[point_label] += (pred_index.eq(point_label))[idx]
+            total_correct_class[point_label] += ((pred_index.eq(point_label))[idx]).item()
 
     with open(logname,'a') as f:
         f.write('\nthe accuracy:{}\n'.format(total_correct * 1.0 / (len(eval_loader.dataset) * NUM_POINTS)))

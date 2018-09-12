@@ -28,7 +28,7 @@
       <file leaf-file-name="pointnet_semseg.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sem_seg/pointnet_semseg.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="219">
+            <state relative-caret-position="820">
               <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -40,7 +40,7 @@
       <file leaf-file-name="pointnet2_module.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/model/pointnet2_module.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="319">
+            <state relative-caret-position="-1061">
               <caret line="175" column="0" lean-forward="false" selection-start-line="175" selection-start-column="0" selection-end-line="175" selection-end-column="0" />
               <folding />
             </state>
@@ -62,8 +62,8 @@
       <file leaf-file-name="train_sseg.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/sem_seg/train_sseg.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1020">
-              <caret line="99" column="13" lean-forward="true" selection-start-line="99" selection-start-column="13" selection-end-line="99" selection-end-column="13" />
+            <state relative-caret-position="491">
+              <caret line="140" column="90" lean-forward="false" selection-start-line="140" selection-start-column="90" selection-end-line="140" selection-end-column="90" />
               <folding>
                 <element signature="e#0#46#0" expanded="true" />
               </folding>
@@ -639,6 +639,14 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/model/pointnet2_module.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1061">
+          <caret line="175" column="0" lean-forward="false" selection-start-line="175" selection-start-column="0" selection-end-line="175" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/model/pointnet2_seg.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="460">
@@ -649,17 +657,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/model/pointnet2_module.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="319">
-          <caret line="175" column="0" lean-forward="false" selection-start-line="175" selection-start-column="0" selection-end-line="175" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/sem_seg/pointnet_semseg.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="219">
+        <state relative-caret-position="820">
           <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
@@ -669,8 +669,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/sem_seg/train_sseg.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1020">
-          <caret line="99" column="13" lean-forward="true" selection-start-line="99" selection-start-column="13" selection-end-line="99" selection-end-column="13" />
+        <state relative-caret-position="491">
+          <caret line="140" column="90" lean-forward="false" selection-start-line="140" selection-start-column="90" selection-end-line="140" selection-end-column="90" />
           <folding>
             <element signature="e#0#46#0" expanded="true" />
           </folding>
