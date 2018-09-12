@@ -51,6 +51,9 @@ parser.add_argument('--resume', default=None,type=str, metavar='PATH',help='path
 
 args=parser.parse_args()
 
+NUM_POINTS = 4096
+EVAL_BATCHSIZE = 4
+
 LOG_DIR = os.path.join(args.log,time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time())))
 print ('prepare training in {}'.format(time.strftime('%Y-%m-%d-%H:%M',time.localtime(time.time()))))
 
@@ -78,13 +81,13 @@ data_loader=torch.utils.data.DataLoader(my_dataset,
 
 data_eval = indoor3d_dataset(args.data, test_area=args.area_eval, training=False, use_color=args.color)
 eval_loader = torch.utils.data.DataLoader(data_eval,num_workers=4,
-            batch_size=4, shuffle=True, collate_fn=pts_collate_seg)
+            batch_size=EVAL_BATCHSIZE, shuffle=True, collate_fn=pts_collate_seg)
 
 if args.color:
     feat_dim = 6
 else:
     feat_dim = 3
-net=pointnet2_seg(input_dim=feat_dim, use_FPS=args.fps)
+net = pointnet2_seg(input_dim=feat_dim, use_FPS=args.fps, num_class=13)
 if is_GPU:
     net = net.cuda()
 optimizer = torch.optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999))
@@ -125,13 +128,13 @@ def evaluate(model_test):
             pts = Variable(pts)
             seg_label = Variable(seg)
 
-        ## pred [N,50,P]  trans [N,64,64]
+        ## pred [N,13,P]
         pred = net(pts)
 
         _, pred_index = torch.max(pred, dim=1)  ##[N,P]
         pred_index, seg_label = pred_index.view(-1,), seg_label.view(-1,)
         num_correct = (pred_index.eq(seg_label)).data.cpu().sum()
-        print('in batch{} acc={}'.format(batch_idx, num_correct.item() * 1.0 / (4 * 4096)))
+        print('in batch{} acc={}'.format(batch_idx, num_correct.item() * 1.0 / (EVAL_BATCHSIZE * NUM_POINTS)))
         total_correct += num_correct.item()
 
         for idx,pts_label in enumerate(seg_label):
@@ -139,7 +142,7 @@ def evaluate(model_test):
             total_correct_class[pts_label] += (pred_index.eq(pts_label))[idx]
 
     with open(logname,'a') as f:
-        f.write('\nthe accuracy:{}\n'.format(total_correct * 1.0 / (len(eval_loader.dataset) * 4096)))
+        f.write('\nthe accuracy:{}\n'.format(total_correct * 1.0 / (len(eval_loader.dataset) * NUM_POINTS)))
         f.write('eval avg class acc: %f \n\n' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
 
 
@@ -194,17 +197,17 @@ def train():
 
             if num_iter%1==0:
                 print('In Epoch{} Iter{},loss={} accuracy={}  time cost:{}'.format(epoch, num_iter, loss.data,
-                                                                                   num_correct.item() / (args.batch_size*2048),
+                                                                                   num_correct.item() / (args.batch_size*NUM_POINTS),
                                                                                    t2 - t1))
             if num_iter%(args.log_step*10)==0 and num_iter!=0:
                 save_checkpoint(epoch, net, num_iter,)
                 evaluate(net)
             if num_iter%(args.log_step)==0 and num_iter!=0:
-                log(logname, epoch, num_iter, loss.data,num_correct.item() / (args.batch_size*2048))
+                log(logname, epoch, num_iter, loss.data,num_correct.item() / (args.batch_size*NUM_POINTS))
 
             if (num_iter*args.batch_size)%args.decay_step==0 and num_iter!=0:
                 f1 = open(logname, 'a')
-                f1.write("learning rate decay in iter{}\n".format(num_iter))
+                f1.write("  learning rate decay in iter{}\n".format(num_iter))
                 f1.close()
                 print ("\n\nlearning rate decay in iter{}\n".format(num_iter))
                 for param in optimizer.param_groups:
