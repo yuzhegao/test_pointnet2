@@ -19,11 +19,12 @@ def load_cls(filelist,use_color=False):
     for line in open(filelist):
         filename = os.path.basename(line.rstrip())
         f = h5py.File(os.path.join(folder, filename))
-        data, label = f['data'][...], f['data'][...]
+        data, label = f['data'][...], f['label'][...]
+        print (data.shape,label.shape)
         if use_color:
-            data = data[:,:6]
+            data = data[:,:,:6]
         else:
-            data = data[:,:3]
+            data = data[:,:,:3]
 
         points.append(data.astype(np.float32))
         labels.append(np.squeeze(label).astype(np.int64))
@@ -98,7 +99,7 @@ def pts_collate_seg(batch):
         seg_label_batch.append(torch.from_numpy(sample[1]))
 
     pts_batch=torch.stack(pts_batch,dim=0)  ##[bs,P,3]
-    pts_batch=torch.transpose(pts_batch,dim0=1,dim1=2)
+    #pts_batch=torch.transpose(pts_batch,dim0=1,dim1=2)
     seg_label_batch=torch.stack(seg_label_batch,dim=0)
 
     return pts_batch.float(),seg_label_batch.long()
@@ -106,7 +107,7 @@ def pts_collate_seg(batch):
 
 
 if __name__ == '__main__':
-    dataset=indoor3d_dataset(datalist_path='/../../3d_data/indoor3d_sem_seg_hdf5_data/all_files.txt', training=False, use_color=True)
+    dataset=indoor3d_dataset(datalist_path='../../3d_data/indoor3d_sem_seg_hdf5_data/all_files.txt', training=False, use_color=True)
     loader=torch.utils.data.DataLoader(dataset,batch_size=2, shuffle=True, collate_fn=pts_collate_seg)
 
     for idx,(pts,seg_label) in enumerate(loader):

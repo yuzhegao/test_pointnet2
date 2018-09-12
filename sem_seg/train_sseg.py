@@ -72,11 +72,11 @@ with open(optfile, 'wt') as opt_f:
 if is_GPU:
     torch.cuda.set_device(args.gpu)
 
-my_dataset = indoor3d_dataset(args.data, test_area=args.area_eval)
+my_dataset = indoor3d_dataset(args.data, test_area=args.area_eval, use_color=args.color)
 data_loader=torch.utils.data.DataLoader(my_dataset,
             batch_size=args.batch_size, shuffle=True, num_workers=4,collate_fn=pts_collate_seg)
 
-data_eval = indoor3d_dataset(args.data_eval, test_area=args.area_eval,training=False)
+data_eval = indoor3d_dataset(args.data, test_area=args.area_eval, training=False, use_color=args.color)
 eval_loader = torch.utils.data.DataLoader(data_eval,num_workers=4,
             batch_size=4, shuffle=True, collate_fn=pts_collate_seg)
 
