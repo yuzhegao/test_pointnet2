@@ -21,7 +21,7 @@ class pointnet2_semseg(nn.Module):
         self.SA4=SA_module(num_sample=16,num_nn=32,mlp_list=[256,256,512],input_dim=(256+3),use_FPS=use_FPS)
         ## 16
 
-        self.FP1 = FP_module(input_dim=(512+256),mlp_list=[256,256],fp_nn=1)
+        self.FP1 = FP_module(input_dim=(512+256),mlp_list=[256,256])
         self.FP2 = FP_module(input_dim=(256+128),mlp_list=[256,256])
         self.FP3 = FP_module(input_dim=(256+64),mlp_list=[256,128])
         self.FP4 = FP_module(input_dim=(128+input_dim),mlp_list=[128,128,128])

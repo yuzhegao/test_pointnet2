@@ -136,13 +136,16 @@ def evaluate(model_test):
         print('in batch{} acc={}'.format(batch_idx, num_correct.item() * 1.0 / (EVAL_BATCHSIZE * NUM_POINTS)))
         total_correct += num_correct.item()
 
+        """
         for idx,point_label in enumerate(seg_label):
             total_seen_class[point_label] += 1
             total_correct_class[point_label] += ((pred_index.eq(point_label))[idx]).item()
+        """
 
+    model_test.train()
     with open(logname,'a') as f:
         f.write('\nthe accuracy:{}\n'.format(total_correct * 1.0 / (len(eval_loader.dataset) * NUM_POINTS)))
-        f.write('eval avg class acc: %f \n\n' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
+        #f.write('eval avg class acc: %f \n\n' % (np.mean(np.array(total_correct_class)/np.array(total_seen_class,dtype=np.float))))
 
 
 def train():
